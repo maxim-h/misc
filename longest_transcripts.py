@@ -7,9 +7,9 @@ import operator
 
 
 @click.command()
-@click.option('--ann', help='Gencode annotation gtf. Can be gzipped.', type="str", default="/home/max/Work/Bioinformatics/refs/gencode.v33lift37.annotation_exons_only.gtf.gz")
-@click.option('--genes', help='Gene list file', type="str", default="/home/max/Work/Bioinformatics/refs/Human_RTK_names")
-def main(ann, genes)
+@click.option('--ann', help='Gencode annotation gtf. Can be gzipped.', type=str, default="/home/max/Work/Bioinformatics/refs/gencode.v33lift37.annotation_exons_only.gtf.gz")
+@click.option('--genes', help='Gene list file', type=str, default="/home/max/Work/Bioinformatics/refs/Human_RTK_names")
+def main(ann, genes):
 
     def longest_transcript(gene):
         transcripts = {}
@@ -38,8 +38,8 @@ def main(ann, genes)
     for gene in kinases:
         os.system(f"mkfifo {gene}")
 
-    if not os.path.exist("./kinases"):
-        os.makedirs(./kinases)
+    if not os.path.exists("./kinases"):
+        os.makedirs("./kinases")
 
 
     start = f"zcat {ann} | "
@@ -57,3 +57,6 @@ def main(ann, genes)
         with open(f"{genes}", "r") as inp:
             out.write("\n".join([f"{rtk.strip()}\t{longest_transcript(rtk.strip())}" for rtk in inp]))
 
+
+if __name__ == '__main__':
+    main()
