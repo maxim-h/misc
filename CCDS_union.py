@@ -4,7 +4,7 @@
 from __future__ import annotations
 import click
 import subprocess
-from typing import List, Dict, NamedTuple
+from typing import List, Dict, TextIO
 from collections import namedtuple
 from dataclasses import dataclass
 
@@ -26,6 +26,7 @@ class Exon:
 
 
 class CCDS:
+    #TODO: write cds to bed file
     def __init__(self, chrom: str, gene: str, ccds_id: str, strand: str, exons: str):
         self.chrom: str = chrom
         self.gene: str = gene
@@ -48,6 +49,9 @@ class CCDS:
         else:
             raise ValueError("strand attribute must be either '+' or '-'")
 
+    def writeBed(self, out: TextIO):
+        out.write("\n".join([f"chr{self.chrom}\t{exon.start}\t{exon.end}\t{self.gene}\t0\t{self.strand}" for exon in self.exons]))
+
 
 class Gene:
     def __init__(self, name: str):
@@ -57,10 +61,10 @@ class Gene:
     def add_ccds(self, chrom: str, gene: str, ccds_id: str, strand: str, exons: str):
         self.ccdss[ccds_id] = CCDS(chrom, gene, ccds_id, strand, exons)
 
-    def union(self) -> List[Exon]:
-
+    def union(self) -> CCDS:
         if list(self.ccdss.values()):
             strand = list(self.ccdss.values())[0].strand
+            chrom = list(self.ccdss.values())[0].chrom
         else:
             raise ValueError(f"No CDS for this {self.name} gene")
 
@@ -74,9 +78,15 @@ class Gene:
                 un[ex.start] = ex
 
         if strand == "+":
-            return(sorted(un.values()))
+            exons = "[" + ", ".join("-".join([str(ex.start), str(ex.end)]) for ex in sorted(un.values())) + "]"
+
+            return(CCDS(chrom, self.name, f"{self.name}union", "+", exons))
+
         elif strand == "-":
-            return(list(reversed(sorted(un.values()))))
+            exons = "[" + ", ".join("-".join([str(ex.start), str(ex.end)]) for ex in reversed(sorted(un.values()))) + "]"
+
+            return(CCDS(chrom, self.name, f"{self.name}union", "-", exons))
+
         else:
             raise ValueError(f"Strand for gene {self.name} must be either '+' or '-'")
 
@@ -101,7 +111,7 @@ def main(ccds, genes, ref):
                     gene.add_ccds(l[0], l[2], l[4], l[6], l[9])
 
     for gene in gene_list:
-        print(gene.union())
+        print(gene.union().exons)
 
 
 if __name__ == '__main__':
