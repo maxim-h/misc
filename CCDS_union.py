@@ -3,9 +3,8 @@
 
 from __future__ import annotations
 import click
-import subprocess
+import os
 from typing import List, Dict, TextIO
-from collections import namedtuple
 from dataclasses import dataclass
 
 
@@ -22,11 +21,10 @@ class Exon:
         return(abs(self.end - self.start))
 
     def reverse(self) -> Exon:
-        return(Exon(start=self.end, end=self.start+1))
+        return(Exon(start=self.end, end=self.start))
 
 
 class CCDS:
-    #TODO: write cds to bed file
     def __init__(self, chrom: str, gene: str, ccds_id: str, strand: str, exons: str):
         self.chrom: str = chrom
         self.gene: str = gene
@@ -50,7 +48,7 @@ class CCDS:
             raise ValueError("strand attribute must be either '+' or '-'")
 
     def writeBed(self, out: TextIO):
-        out.write("\n".join([f"chr{self.chrom}\t{exon.start}\t{exon.end}\t{self.gene}\t0\t{self.strand}" for exon in self.exons]))
+        out.write("\n".join([f"chr{self.chrom}\t{exon.start}\t{exon.end+1}\t{self.gene}\t0\t{self.strand}" for exon in self.exons]))
 
 
 class Gene:
@@ -110,8 +108,13 @@ def main(ccds, genes, ref):
                 if l[2] == gene.name and l[5] == "Public":
                     gene.add_ccds(l[0], l[2], l[4], l[6], l[9])
 
+
+    if not os.path.exists("./ccds"):
+        os.makedirs("./ccds")
+
     for gene in gene_list:
-        print(gene.union().exons)
+        with open(f"ccds/{gene.name}.bed", "w") as bed:
+            gene.union().writeBed(bed)
 
 
 if __name__ == '__main__':
